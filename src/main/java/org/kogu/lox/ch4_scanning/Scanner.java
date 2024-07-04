@@ -69,13 +69,29 @@ final class Scanner {
             case '"': string(); break;
 
             default:
-                Lox.error(line, "Unexpected character: " + c);
-                if (errors == null) errors = new ArrayList<>();
-                mergeOrAddError(errors, new ScanError(line, start, current, "unexpected char(s)"));
+                if (isDigit(c)) {
+                    number();
+                } else {
+                    Lox.error(line, "Unexpected character: " + c);
+                    if (errors == null) errors = new ArrayList<>();
+                    mergeOrAddError(errors, new ScanError(line, start, current, "unexpected char(s)"));
+                }
                 break;
         }
 
 
+    }
+
+    private void number() {
+        while (isDigit(peek())) advance();
+
+        if (peek() == '.' && isDigit(peekNext())) {
+            do {
+                advance();
+            } while (isDigit(peek()));
+        }
+        double v = Double.parseDouble(source.substring(start, current));
+        addToken(NUMBER, v);
     }
 
     private void string() {
@@ -109,7 +125,13 @@ final class Scanner {
             return false;
     }
 
-    private char peek() {return isAtEnd() ? '\0' : source.charAt(current);}
+    private char peek() {
+        return isAtEnd() ? '\0' : source.charAt(current);
+    }
+
+    private char peekNext() {
+        return current + 1 >= source.length() ? '\0' : source.charAt(current + 1);
+    }
 
     private void addToken(TokenType type) {
         String lexeme = source.substring(start, current);
@@ -123,9 +145,23 @@ final class Scanner {
         tokens.add(token);
     }
 
+    private static boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
+
+    private static boolean isAlpha(char c) {
+        return (c >= 'a' && c <= 'z') ||
+               (c >= 'A' && c <= 'Z') ||
+               c == '_';
+    }
+
+    private static boolean isAlphaNumeric(char c) {
+        return isAlpha(c) || isDigit(c);
+    }
+
     record ScanError(int line, int start, int end, String message) {}
 
-    private void mergeOrAddError(List<ScanError> errors, ScanError error) {
+    private static void mergeOrAddError(List<ScanError> errors, ScanError error) {
         if (errors.isEmpty()) {
             errors.add(error);
             return;
