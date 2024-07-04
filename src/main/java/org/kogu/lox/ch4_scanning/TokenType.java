@@ -1,4 +1,4 @@
-package org.kogu.lox;
+package org.kogu.lox.ch4_scanning;
 
 enum TokenType {
     // Single-character tokens.
