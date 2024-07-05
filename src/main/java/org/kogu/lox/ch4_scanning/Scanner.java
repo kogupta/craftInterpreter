@@ -71,6 +71,8 @@ final class Scanner {
             default:
                 if (isDigit(c)) {
                     number();
+                } else if (isAlpha(c)) {
+                    identifier();
                 } else {
                     Lox.error(line, "Unexpected character: " + c);
                     if (errors == null) errors = new ArrayList<>();
@@ -78,8 +80,14 @@ final class Scanner {
                 }
                 break;
         }
+    }
 
+    private void identifier() {
+        while (isAlphaNumeric(peek()))
+            advance();
 
+        String s = source.substring(start, current);
+        addToken(keywordOrIdentifier(s));
     }
 
     private void number() {
