@@ -33,42 +33,40 @@ final class Scanner {
     private void scanToken() {
         char c = advance();
         switch (c) {
-            case '(': addToken(LEFT_PAREN); break;
-            case ')': addToken(RIGHT_PAREN); break;
-            case '{': addToken(LEFT_BRACE); break;
-            case '}': addToken(RIGHT_BRACE); break;
-            case ',': addToken(COMMA); break;
-            case '.': addToken(DOT); break;
-            case '-': addToken(MINUS); break;
-            case '+': addToken(PLUS); break;
-            case ';': addToken(SEMICOLON); break;
-            case '*': addToken(STAR); break;
+            case '(' -> addToken(LEFT_PAREN);
+            case ')' -> addToken(RIGHT_PAREN);
+            case '{' -> addToken(LEFT_BRACE);
+            case '}' -> addToken(RIGHT_BRACE);
+            case ',' -> addToken(COMMA);
+            case '.' -> addToken(DOT);
+            case '-' -> addToken(MINUS);
+            case '+' -> addToken(PLUS);
+            case ';' -> addToken(SEMICOLON);
+            case '*' -> addToken(STAR);
 
-            case '!': addToken(match('=') ? BANG_EQUAL : BANG); break;
-            case '=': addToken(match('=') ? EQUAL_EQUAL : EQUAL); break;
-            case '<': addToken(match('=') ? LESS_EQUAL : LESS); break;
-            case '>': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
+            case '!' -> addToken(match('=') ? BANG_EQUAL : BANG);
+            case '=' -> addToken(match('=') ? EQUAL_EQUAL : EQUAL);
+            case '<' -> addToken(match('=') ? LESS_EQUAL : LESS);
+            case '>' -> addToken(match('=') ? GREATER_EQUAL : GREATER);
 
-            case '/':
+            case '/' -> {
                 if (match('/')) {
                     // a comment starting with //
                     while (peek() != '\n' && !isAtEnd())
                         advance();
                 } else
                     addToken(SLASH);
-                break;
+            }
 
             // whitespace
-            case ' ':
-            case '\r':
-            case '\t': break;
+            case ' ', '\r', '\t' -> {}
 
             // line ending
-            case '\n': line++; break;
+            case '\n' -> line++;
 
-            case '"': string(); break;
+            case '"' -> string();
 
-            default:
+            default -> {
                 if (isDigit(c)) {
                     number();
                 } else if (isAlpha(c)) {
@@ -78,7 +76,7 @@ final class Scanner {
                     if (errors == null) errors = new ArrayList<>();
                     mergeOrAddError(errors, new ScanError(line, start, current, "unexpected char(s)"));
                 }
-                break;
+            }
         }
     }
 
@@ -121,9 +119,13 @@ final class Scanner {
         addToken(STRING, value);
     }
 
-    private boolean isAtEnd() {return current >= source.length();}
+    private boolean isAtEnd() {
+        return current >= source.length();
+    }
 
-    private char advance() {return source.charAt(current++);}
+    private char advance() {
+        return source.charAt(current++);
+    }
 
     private boolean match(char expected) {
         if (!isAtEnd() && source.charAt(current) == expected) {

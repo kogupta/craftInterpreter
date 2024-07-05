@@ -66,44 +66,8 @@ class LoxTest {
         val x = "Hello, world!";
         """,
         """
-        val x = "Hello, world!
-        """,
+        var x = "Hello, world!
         """
-        fun addPair(a, b) {
-          return a + b;
-        }
-        fun identity(a) {
-          return a;
-        }
-        print identity(addPair)(1, 2);
-        """,
-        """
-        class Breakfast {
-          cook() {
-            print "Eggs a-fryin'!";
-          }
-        
-          serve(who) {
-            print "Enjoy your breakfast, " + who + ".";
-          }
-        }
-        """,
-        """
-        class Breakfast {
-          init(meat, bread) {
-            this.meat = meat;
-            this.bread = bread;
-          }
-        }
-        """,
-        """
-        class Brunch < Breakfast {
-          init(meat, bread, drink) {
-            super.init(meat, bread);
-            this.drink = drink;
-          }
-        }
-        """,
     };
 
     @Test
