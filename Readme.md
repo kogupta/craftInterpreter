@@ -1,6 +1,6 @@
 ### Crafting interpreters
 
-Working through the delightful [book](https://craftinginterpreters.com/).
+Working through the delightful [book](https://craftinginterpreters.com/contents.html).
 
 #### Chapter 4
 
