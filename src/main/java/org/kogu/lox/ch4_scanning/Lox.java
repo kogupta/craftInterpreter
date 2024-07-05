@@ -10,12 +10,12 @@ import java.util.Scanner;
 public final class Lox {
     private static boolean hadError = false;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String... args) throws IOException {
         int len = args.length;
         switch (len) {
-            case 0: runPrompt();
-            case 1: runFile(args[0]);
-            default: {
+            case 0 -> runPrompt();
+            case 1 -> runFile(args[0]);
+            default -> {
                 System.out.println("Usage: jlox [script]");
                 System.exit(64);
             }
