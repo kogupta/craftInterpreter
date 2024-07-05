@@ -12,7 +12,7 @@ final class Scanner {
     private final String source;
     private final List<Token> tokens;
 
-    private List<ScanError> errors;
+    List<ScanError> errors;
     private int start = 0, current = 0, line = 1;
 
     Scanner(String src) {
