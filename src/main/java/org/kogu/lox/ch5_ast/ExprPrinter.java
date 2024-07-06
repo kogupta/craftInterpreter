@@ -47,7 +47,14 @@ public final class ExprPrinter {
                 yield acc.append(')');
             }
             case Expr.Unary u -> {
-                acc.append(u.op().symbol);
+                // if unary negative (~ here), pop off 1 from stack
+                // if binary negative (ie, -), pop off 2
+                // hence, separate symbols
+                char c = switch (u.op()) {
+                    case Negative -> '~';
+                    case Not -> '!';
+                };
+                acc.append(c);
                 yield _rpnHelper(u.expr(), acc);
             }
             case Literal literal -> printLiteral(acc, literal);
