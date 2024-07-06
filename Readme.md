@@ -70,3 +70,12 @@ Working through the delightful [book](https://craftinginterpreters.com/contents.
   binary      -> expression operator expression ;
   operator    -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+"  | "-"  | "*" | "/" ;
   ```
+
+- operators: 
+
+  | symbol | repetition                |
+  |--------|---------------------------|
+  | `*`    | 0 or more                 |
+  | `+`    | at least once - 1 or more |
+  | `?`    | at most once - 0 or 1     |
+  

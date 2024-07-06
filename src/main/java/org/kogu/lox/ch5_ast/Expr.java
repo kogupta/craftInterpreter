@@ -34,4 +34,3 @@ public sealed interface Expr permits Expr.Binary, Expr.Grouping, Expr.Unary, Lit
     static Expr nil() {return new Literal.Nil();}
 
 }
-
