@@ -30,3 +30,43 @@ Working through the delightful [book](https://craftinginterpreters.com/contents.
 #### Chapter 5
 
 - `sealed` traits and pattern matching y'all
+- breakfast grammar: 
+  ```text
+  breakfast  -> protein "with" breakfast "on the side" ;
+  breakfast  -> protein ;                => protein ("with" breakfast "on the side")? | bread
+  breakfast  -> bread ;
+             
+  protein    -> crispiness "crispy" "bacon" ;
+  protein    -> "sausage" ;
+  protein    -> cooked "eggs" ;          => ("scrambled" | "poached" | "fried" ) "eggs" ;
+             
+  crispiness -> "really" ;
+  crispiness -> "really" crispiness ;    =>  crispiness -> "really"+ ;
+             
+  cooked     -> "scrambled" ;
+  cooked     -> "poached" ;              => cooked -> "scrambled" | "poached" | "fried" ;
+  cooked     -> "fried" ;
+             
+  bread      -> "toast" ;
+  bread      -> "biscuits" ;             => bread -> "toast" | "biscuits" | "English muffin";
+  bread      -> "English muffin" ;
+  ```
+
+  in regex terms become: 
+  ```text
+  breakfast -> protein ( "with" breakfast "on the side" )? | bread ;
+  protein   -> "really"+ "crispy" "bacon" | "sausage" | ( "scrambled" | "poached" | "fried" ) "eggs" ;
+  bread     -> "toast" | "biscuits" | "English muffin" ;
+  ```
+- lox init grammar: 
+  ```text
+  expression  ->  literal
+               | unary
+               | binary
+               | grouping ;
+  literal     -> NUMBER | STRING | "true" | "false" | "nil" ;
+  grouping    -> "(" expression ")" ;
+  unary       -> ( "-" | "!" ) expression ;
+  binary      -> expression operator expression ;
+  operator    -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+"  | "-"  | "*" | "/" ;
+  ```
