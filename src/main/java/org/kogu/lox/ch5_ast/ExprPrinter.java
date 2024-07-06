@@ -59,22 +59,19 @@ public final class ExprPrinter {
             case Expr.Binary(var a, var op, var b) -> {
                 acc.append('(').append(op.symbol).append(' ');
                 _lispyHelper(a, acc);
-
-                if (a instanceof Literal)
-                    acc.append(' ');
-
+                acc.append(' ');
                 _lispyHelper(b, acc);
-
                 yield acc.append(')');
             }
             case Expr.Grouping(var exp) -> {
-                acc.append('(');
+                acc.append("(group ");
                 _lispyHelper(exp, acc);
                 yield acc.append(')');
             }
             case Expr.Unary u -> {
-                acc.append(u.op().symbol);
-                yield _lispyHelper(u.expr(), acc);
+                acc.append('(').append(u.op().symbol).append(' ');
+                _lispyHelper(u.expr(), acc);
+                yield acc.append(')');
             }
             case Literal literal -> printLiteral(acc, literal);
         };

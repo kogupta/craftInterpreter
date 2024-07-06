@@ -65,6 +65,12 @@ class ExprPrinterTest {
 
         assertEquals("1 2 + 4 3 - *", asRPN(binary(a, Multiply, b)));
 
-        assertEquals("(* (+ 1 2)(- 4 3))", lispy(binary(a, Multiply, b)));
+        assertEquals("(* (+ 1 2) (- 4 3))", lispy(binary(a, Multiply, b)));
+    }
+
+    @Test
+    void lispyPrint() {
+        Expr e = binary(unary(Negative, literal(123)), Multiply, grouping(literal(45.67)));
+        assertEquals("(* (- 123) (group 45.67))", lispy(e));
     }
 }
