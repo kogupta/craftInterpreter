@@ -1,6 +1,6 @@
 package org.kogu.lox.ch4_scanning;
 
-sealed interface Token {
+sealed public interface Token {
     TokenType tokenType();
     String lexeme();
     int line();
