@@ -108,7 +108,8 @@ public final class Parser {
     private boolean matchAny(TokenType... types) {
         for (TokenType type : types) {
             if (check(type)) {
-                advance();
+                // advance();
+                if (isNotEnd()) current++;
                 return true;
             }
         }
@@ -128,7 +129,8 @@ public final class Parser {
     }
 
     private boolean isNotEnd() {
-        return peek().tokenType() != EOF;
+        return current < tokens.size();
+        // return peek().tokenType() != EOF;
     }
 
     private Token peek() {
