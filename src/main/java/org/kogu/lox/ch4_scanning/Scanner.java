@@ -91,13 +91,22 @@ public final class Scanner {
     private void number() {
         while (isDigit(peek())) advance();
 
+        boolean isDouble = false;
         if (peek() == '.' && isDigit(peekNext())) {
+            isDouble = true;
             do {
                 advance();
             } while (isDigit(peek()));
         }
-        double v = Double.parseDouble(source.substring(start, current));
-        addToken(NUMBER, v);
+
+        if (isDouble) {
+            double v = Double.parseDouble(source.substring(start, current));
+            addToken(NUMBER, v);
+        } else {
+            // assuming an int
+            int n = Integer.parseInt(source.substring(start, current));
+            addToken(NUMBER, n);
+        }
     }
 
     private void string() {
