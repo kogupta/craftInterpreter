@@ -194,4 +194,24 @@ public final class Parser {
             return Optional.empty();
         }
     }
+
+    public static void main(String[] args) {
+        Token semicolon = Token.of(SEMICOLON, ";", 1);
+        Token eof = Token.eof(1);
+
+        System.out.println(parse(List.of(Token.of(IDENTIFIER, "a", 1), semicolon, eof)));
+
+        var slash = Token.of(SLASH, "/", 1);
+        var one = Token.of(NUMBER, "1", 1, 1);
+        var two = Token.of(NUMBER, "2", 2, 1);
+        System.out.println(parse(List.of(one, slash, two, semicolon, eof)));
+
+        Token _true = Token.of(TRUE, "true", 1);
+        Token or = Token.of(OR, "or", 1);
+        Token _false = Token.of(FALSE, "false", 1);
+        System.out.println(parse(List.of(_true, or, _false, semicolon, eof)));
+
+
+    }
+
 }

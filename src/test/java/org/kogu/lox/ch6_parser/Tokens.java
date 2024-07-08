@@ -126,11 +126,11 @@ public final class Tokens {
     }
 
     public static Token one() {
-        return Token.of(NUMBER, "1", 1.0, 1);
+        return Token.of(NUMBER, "1", 1, 1);
     }
 
     public static Token two() {
-        return Token.of(NUMBER, "2", 2.0, 1);
+        return Token.of(NUMBER, "2", 2, 1);
     }
 
     public static Token integer(String integer) {

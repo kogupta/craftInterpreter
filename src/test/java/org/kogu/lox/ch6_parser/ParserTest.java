@@ -4,8 +4,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.kogu.lox.ch4_scanning.Token;
+import org.kogu.lox.ch5_ast.BinaryOperator;
 import org.kogu.lox.ch5_ast.Expr;
 import org.kogu.lox.ch5_ast.Literal;
+import org.kogu.lox.ch5_ast.UnaryOperator;
 
 import java.beans.Expression;
 import java.util.List;
@@ -14,6 +16,8 @@ import java.util.Optional;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.kogu.lox.ch4_scanning.TokenType.STRING;
+import static org.kogu.lox.ch5_ast.Expr.*;
+import static org.kogu.lox.ch5_ast.UnaryOperator.Not;
 import static org.kogu.lox.ch6_parser.Tokens.*;
 
 class ParserTest {
@@ -52,14 +56,14 @@ class ParserTest {
         void trueToken() {
             Optional<Expr> expr = parseTokens(_true(), semicolon(), eof());
             assertThat(expr).isPresent();
-            assertThat(expr.get()).isEqualTo(Expr.literal(true));
+            assertThat(expr.get()).isEqualTo(literal(true));
         }
 
         @Test
         void falseToken() {
             Optional<Expr> expr = parseTokens(_false(), semicolon(), eof());
             assertThat(expr).isPresent();
-            assertThat(expr.get()).isEqualTo(Expr.literal(false));
+            assertThat(expr.get()).isEqualTo(literal(false));
         }
 
         @Test
@@ -108,12 +112,8 @@ class ParserTest {
         @Test
         void identifierToken() {
             Optional<Expr> expr = parseTokens(identifier("a"), semicolon(), eof());
-            assertThat(expr).isPresent();
-            assertThat(expr.get()).matches(e -> e instanceof Expr.Grouping(Literal.Int(int n)) && n == 1);
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertVariableExpression(expression, identifier("a"));
+            assertThat(expr).isEmpty();
+            // no support for identifier yet
         }
     }
 
@@ -124,44 +124,21 @@ class ParserTest {
         void bangTokenFollowedByLiteralToken() {
             Optional<Expr> expr = parseTokens(bang(), _false(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            var unaryExpression = castTo(expression, Expression.Unary.class);
-
-            assertThat(unaryExpression.operator()).isEqualToComparingFieldByField(bang());
-            assertLiteralExpression(unaryExpression.right(), false);
+            assertThat(expr.get()).isEqualTo(unary(Not, literal(false)));
         }
 
         @Test
         void minusTokenFollowedByLiteralToken() {
             Optional<Expr> expr = parseTokens(minus(), one(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            var unaryExpression = castTo(expression, Expression.Unary.class);
-
-            assertThat(unaryExpression.operator()).isEqualToComparingFieldByField(minus());
-            assertLiteralExpression(unaryExpression.right(), 1.0);
+            assertThat(expr.get()).isEqualTo(unary(UnaryOperator.Negative, literal(1)));
         }
 
         @Test
         void multipleUnaryOperations() {
             Optional<Expr> expr = parseTokens(bang(), bang(), bang(), _false(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            var farLeftUnaryExpression = castTo(expression, Expression.Unary.class);
-            assertThat(farLeftUnaryExpression.operator()).isEqualToComparingFieldByField(bang());
-
-            var leftUnaryExpression = castTo(farLeftUnaryExpression.right(), Expression.Unary.class);
-            assertThat(leftUnaryExpression.operator()).isEqualToComparingFieldByField(bang());
-
-            var unaryExpression = castTo(leftUnaryExpression.right(), Expression.Unary.class);
-            assertThat(unaryExpression.operator()).isEqualToComparingFieldByField(bang());
-            assertLiteralExpression(unaryExpression.right(), false);
+            assertThat(expr.get()).isEqualTo(unary(Not, unary(Not, unary(Not, literal(false)))));
         }
     }
 
@@ -172,116 +149,83 @@ class ParserTest {
         void slashTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), slash(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, slash(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.Divide, literal(2)));
         }
 
         @Test
         void starTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), star(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, star(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.Multiply, literal(2)));
         }
 
         @Test
         void minusTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), minus(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, minus(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.Subtract, literal(2)));
         }
 
         @Test
         void plusTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), plus(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, plus(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.Add, literal(2)));
         }
 
         @Test
         void greaterTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), greater(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, greater(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.GreaterThan, literal(2)));
         }
 
         @Test
         void greaterEqualTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), greaterEqual(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, greaterEqual(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.GreaterThanEq, literal(2)));
         }
 
         @Test
         void lessTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), less(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, less(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.LessThan, literal(2)));
         }
 
         @Test
         void lessEqualTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), lessEqual(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, lessEqual(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.LessThanEq, literal(2)));
         }
 
         @Test
         void bangEqualTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), bangEqual(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, bangEqual(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.NotEq, literal(2)));
         }
 
         @Test
         void equalEqualTokenWithLeftAndRightOperands() {
             Optional<Expr> expr = parseTokens(one(), equalEqual(), two(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertBinaryExpression(expression, 1.0, equalEqual(), 2.0);
+            assertThat(expr.get()).isEqualTo(binary(literal(1), BinaryOperator.Eq, literal(2)));
         }
 
         @Test
         void multipleBinaryOperand() {
             Optional<Expr> expr = parseTokens(one(), star(), two(), plus(), pi(), semicolon(), eof());
-
-            var statements = parser;
-
-            var firstBinaryExpression = castTo(extractOnlyExpressionFrom(statements), Expression.Binary.class);
-            assertThat(firstBinaryExpression.operator()).isEqualToComparingFieldByField(plus());
-            assertLiteralExpression(firstBinaryExpression.right(), 3.14);
-
-            var secondBinaryExpression = castTo(firstBinaryExpression.left(), Expression.Binary.class);
-            assertLiteralExpression(secondBinaryExpression.left(), 1.0);
-            assertThat(secondBinaryExpression.operator()).isEqualToComparingFieldByField(star());
-            assertLiteralExpression(secondBinaryExpression.right(), 2.0);
+            assertThat(expr).isPresent();
+            assertThat(expr.get()).isEqualTo(
+                binary(
+                    binary(literal(1), BinaryOperator.Multiply, literal(2)),
+                    BinaryOperator.Add,
+                    literal(3.14)
+                )
+            );
         }
     }
 
@@ -292,10 +236,7 @@ class ParserTest {
         void orOperatorWithBothOperands() {
             Optional<Expr> expr = parseTokens(_true(), or(), _false(), semicolon(), eof());
             assertThat(expr).isPresent();
-
-            var expression = extractOnlyExpressionFrom(parser);
-
-            assertLogicalExpression(expression, true, or(), false);
+            assertThat(expr.get()).isEqualTo(binary(literal(true), ));
         }
 
         @Test
@@ -1328,736 +1269,730 @@ class ParserTest {
             assertErrorAtLexeme("}");
         }
 
-        @Nested
-        class If {
-
-            @Test
-            void ifWithoutRightParen() {
-                Optional<Expr> expr = parseTokens(
-                    _if(), leftParen(), _true(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at 'print' expect ')' after if condition.");
-            }
-
-            @Test
-            void ifWithoutCondition() {
-                Optional<Expr> expr = parseTokens(
-                    _if(), leftParen(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme(")");
-
-                assertPrintStatement(statements.get(1), 1.0);
-            }
-
-            @Test
-            void ifWithoutLeftParen() {
-                Optional<Expr> expr = parseTokens(
-                    _if(), _true(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-                assertThat(statements.get(0)).isNull();
-                assertError("[line 1] SyntaxError: at 'true' expect '(' after 'if'.");
-
-                assertPrintStatement(statements.get(1), 1.0);
-            }
-
-            @Test
-            void ifElseWithoutElseBranch() {
-                Optional<Expr> expr = parseTokens(
-                    _if(), leftParen(), _true(), rightParen(),
-                    print(), one(), semicolon(),
-                    _else(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertErrorAtLexeme("end");
-            }
-        }
-
-        @Nested
-        class While {
-
-            @Test
-            void whileWithoutRightParen() {
-                Optional<Expr> expr = parseTokens(
-                    _while(), leftParen(), _true(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at 'print' expect ')' after while condition.");
-            }
-
-            @Test
-            void whileWithoutCondition() {
-                Optional<Expr> expr = parseTokens(
-                    _while(), leftParen(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme(")");
-
-                assertPrintStatement(statements.get(1), 1.0);
-            }
-
-            @Test
-            void whileWithoutLeftParen() {
-                Optional<Expr> expr = parseTokens(
-                    _while(), _true(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-                assertThat(statements.get(0)).isNull();
-                assertError("[line 1] SyntaxError: at 'true' expect '(' after 'while'.");
-
-                assertPrintStatement(statements.get(1), 1.0);
-            }
-        }
-
-        @Nested
-        class For {
-
-            @Test
-            void forWithoutRightParen() {
-                Optional<Expr> expr = parseTokens(
-                    _for(), leftParen(), semicolon(), semicolon(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at 'print' expect expression.");
-            }
-
-            @Test
-            void forWithoutLeftParen() {
-                Optional<Expr> expr = parseTokens(
-                    _for(), semicolon(), semicolon(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(4);
-                assertThat(statements.get(0)).isNull();
-                assertThat(statements.get(1)).isNull();
-                assertThat(statements.get(2)).isNull();
-                assertThat(statements.get(3)).isInstanceOf(Statement.Print.class); // Recover to the print statement, this test does not care!
-                assertError("[line 1] SyntaxError: at ')' expect expression.");
-            }
-
-            @Test
-            void forWithOneMissingSemiColon() {
-                Optional<Expr> expr = parseTokens(
-                    _for(), leftParen(), var(), identifier("i"), equal(), one(), semicolon(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-                assertThat(statements.get(0)).isNull();
-                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Recover to the print statement, this test does not care!
-                assertError("[line 1] SyntaxError: at ')' expect expression.");
-            }
-
-            @Test
-            void forWithTwoMissingSemiColons() {
-                Optional<Expr> expr = parseTokens(
-                    _for(), leftParen(), var(), identifier("i"), equal(), one(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-                assertThat(statements.get(0)).isNull();
-                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Recover to the print statement, this test does not care!
-                assertError("[line 1] SyntaxError: at ')' expect ';' after variable declaration.");
-            }
-        }
-
-        @Nested
-        class CallFunction {
-
-            @Test
-            void callFunctionWithoutLeftParen() {
-                Optional<Expr> expr = parseTokens(
-                    identifier("get"), rightParen(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at ')' expect ';' after value.");
-            }
-
-            @Test
-            void callFunctionWithoutRightParen() {
-                Optional<Expr> expr = parseTokens(
-                    identifier("get"), leftParen(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at ';' expect expression.");
-            }
-
-            @Test
-            void callFunctionWithMissingCommaInArgumentList() {
-                Optional<Expr> expr = parseTokens(
-                    identifier("sum"), leftParen(), one(), two(), rightParen(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at '2' expect ')' after arguments.");
-            }
-
-            @Test
-            void callFunctionWithTooManyArguments() {
-                Optional<Expr> expr = parseTokens(
-                    identifier("sum"), leftParen(),
-                    one(), comma(),
-                    one(), comma(),
-                    one(), comma(),
-                    one(), comma(),
-                    one(), comma(),
-                    one(), comma(),
-                    one(), comma(),
-                    one(), comma(),
-                    one(),
-                    rightParen(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).doesNotContainNull(); // Still parses the call!
-                assertThat(statements.get(0)).isInstanceOf(Statement.Expression.class);
-                assertError("[line 1] SyntaxError: at '1' cannot have more than 8 arguments.");
-            }
-        }
-
-        @Nested
-        class CallGetProperty {
-
-            @Test
-            void callGetPropertyWithoutObject() {
-                Optional<Expr> expr = parseTokens(
-                    dot(), identifier("x"), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at '.' expect expression.");
-            }
-
-            @Test
-            void callGetPropertyWithoutName() {
-                Optional<Expr> expr = parseTokens(
-                    identifier("point"), dot(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at ';' expect property name after '.'.");
-            }
-
-            @Test
-            void callSetPropertyWithoutObject() {
-                Optional<Expr> expr = parseTokens(
-                    dot(), identifier("x"), equal(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at '.' expect expression.");
-            }
-
-            @Test
-            void callSetPropertyWithoutName() {
-                Optional<Expr> expr = parseTokens(
-                    identifier("point"), dot(), equal(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at '=' expect property name after '.'.");
-            }
-
-            @Test
-            void callSetPropertyWithoutEqual() {
-                Optional<Expr> expr = parseTokens(
-                    identifier("point"), dot(), identifier("x"), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at '1' expect ';' after value.");
-            }
-
-            @Test
-            void callSetPropertyWithoutValue() {
-                Optional<Expr> expr = parseTokens(
-                    identifier("point"), dot(), identifier("x"), equal(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at ';' expect expression.");
-            }
-        }
-
-        @Nested
-        class Function {
-
-            @Test
-            void functionWithoutIdentifier() {
-                Optional<Expr> expr = parseTokens(
-                    fun(), leftParen(), rightParen(), leftBrace(),
-                    print(), one(), semicolon(),
-                    rightBrace(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(3);
-                assertThat(statements.get(0)).isNull();
-                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Still parses some of the code.
-                assertThat(statements.get(2)).isNull();
-                assertError("[line 1] SyntaxError: at '}' expect expression.");
-            }
-
-            @Test
-            void functionWithoutLeftParen() {
-                Optional<Expr> expr = parseTokens(
-                    fun(), identifier("get"), rightParen(), leftBrace(),
-                    print(), one(), semicolon(),
-                    rightBrace(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(3);
-                assertThat(statements.get(0)).isNull();
-                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Still parses some of the code.
-                assertThat(statements.get(2)).isNull();
-                assertError("[line 1] SyntaxError: at '}' expect expression.");
-            }
-
-            @Test
-            void functionWithoutRightParen() {
-                Optional<Expr> expr = parseTokens(
-                    fun(), identifier("get"), leftParen(), leftBrace(),
-                    print(), one(), semicolon(),
-                    rightBrace(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(3);
-                assertThat(statements.get(0)).isNull();
-                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Still parses some of the code.
-                assertThat(statements.get(2)).isNull();
-                assertError("[line 1] SyntaxError: at '}' expect expression.");
-            }
-
-            @Test
-            void functionWithMissingCommaInParameterList() {
-                Optional<Expr> expr = parseTokens(
-                    fun(), identifier("get"), leftParen(), identifier("a"), identifier("b"), rightParen(), leftBrace(),
-                    print(), one(), semicolon(),
-                    rightBrace(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(3);
-                assertThat(statements.get(0)).isNull();
-                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Still parses some of the code.
-                assertThat(statements.get(2)).isNull();
-                assertError("[line 1] SyntaxError: at '}' expect expression.");
-            }
-
-            @Test
-            void functionWithMoreThan8Parameters() {
-                Optional<Expr> expr = parseTokens(
-                    fun(), identifier("get"), leftParen(),
-                    identifier("a1"), comma(),
-                    identifier("a2"), comma(),
-                    identifier("a3"), comma(),
-                    identifier("a4"), comma(),
-                    identifier("a5"), comma(),
-                    identifier("a6"), comma(),
-                    identifier("a7"), comma(),
-                    identifier("a8"), comma(),
-                    identifier("a9"), rightParen(),
-                    leftBrace(),
-                    print(), one(), semicolon(),
-                    rightBrace(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).doesNotContainNull(); // Still parses the call!
-                assertThat(statements.get(0)).isInstanceOf(Statement.Function.class);
-                assertError("[line 1] SyntaxError: at 'a9' cannot have more than 8 parameters.");
-            }
-
-            @Test
-            void functionWithoutLeftBrace() {
-                Optional<Expr> expr = parseTokens(
-                    fun(), identifier("get"), leftParen(), rightParen(),
-                    print(), one(), semicolon(),
-                    rightBrace(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at '}' expect expression.");
-            }
-
-            @Test
-            void functionWithoutRightBrace() {
-                Optional<Expr> expr = parseTokens(
-                    fun(), identifier("get"), leftParen(), rightParen(), leftBrace(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at 'end' expect '}' after block.");
-            }
-        }
-
-        @Nested
-        class Return {
-
-            @Test
-            void emptyReturnWithoutSemicolon() {
-                Optional<Expr> expr = parseTokens(_return(), eof());
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at 'end' expect expression.");
-            }
-
-            @Test
-            void returnValueWithoutSemicolon() {
-                Optional<Expr> expr = parseTokens(_return(), one(), eof());
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at 'end' expect ';' after return value.");
-            }
-        }
-
-        @Nested
-        class Class {
-
-            @Test
-            void classWithMissingLeftBrace() {
-                Optional<Expr> expr = parseTokens(_class(), identifier("Foo"), rightBrace(), eof());
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at '}' expect '{' before class body.");
-            }
-
-            @Test
-            void classWithMissingRightBrace() {
-                Optional<Expr> expr = parseTokens(_class(), identifier("Foo"), leftBrace(), eof());
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at 'end' expect '}' after class body.");
-            }
-
-            @Test
-            void classWithLessTokenButMissingSuperClassIdentifier() {
-                Optional<Expr> expr = parseTokens(_class(), identifier("Foo"), less(), leftBrace(), rightBrace(), eof());
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at '{' expected super class name.");
-            }
-        }
-
-        @Nested
-        class Super {
-
-            @Test
-            void superWithMissingDot() {
-                Optional<Expr> expr = parseTokens(_super(), identifier("method"), semicolon(), eof());
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at 'method' expect '.' after 'super'.");
-            }
-
-            @Test
-            void superWithMissingMethod() {
-                Optional<Expr> expr = parseTokens(_super(), dot(), semicolon(), eof());
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(1).containsOnlyNulls();
-                assertError("[line 1] SyntaxError: at ';' expect superclass method name.");
-            }
-        }
-
-        @Nested
-        class SynchronizeCases {
-
-            @Test
-            void afterErrorRecoversToNextSemiColon() {
-                Optional<Expr> expr = parseTokens(
-                    bangEqual(), two(), semicolon(),    // Error: bangEqual without left operand
-                    one(), bangEqual(), two(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                assertBinaryExpression(extractExpressionFrom(statements.get(1)), 1.0, bangEqual(), 2.0);
-            }
-
-            @Test
-            void afterErrorRecoversToNextVariableDeclarationEvenWhenSemiColonIsMissing() {
-                Optional<Expr> expr = parseTokens(
-                    bangEqual(), two(), // Error: bangEqual without left operand
-                    var(), identifier("a"), equal(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                assertVariableStatement(statements.get(1), identifier("a"), 1.0);
-            }
-
-            @Test
-            void afterErrorRecoversToNextPrintDeclarationEvenWhenSemiColonIsMissing() {
-                Optional<Expr> expr = parseTokens(
-                    bangEqual(), two(), // Error: bangEqual without left operand
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                assertPrintStatement(statements.get(1), 1.0);
-            }
-
-            @Test
-            void afterErrorRecoversToNextIfDeclarationEvenWhenSemiColonIsMissing() {
-                Optional<Expr> expr = parseTokens(
-                    bangEqual(), two(), // Error: bangEqual without left operand
-                    _if(), leftParen(), _true(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                assertIfStatementPrints(statements.get(1), true, 1.0);
-            }
-
-            @Test
-            void afterErrorRecoversToNextWhileDeclarationEvenWhenSemiColonIsMissing() {
-                Optional<Expr> expr = parseTokens(
-                    bangEqual(), two(), // Error: bangEqual without left operand
-                    _while(), leftParen(), _true(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                assertWhileStatementPrints(statements.get(1), true, 1.0);
-            }
-
-            @Test
-            void afterErrorRecoversToNextForDeclarationEvenWhenSemiColonIsMissing() {
-                Optional<Expr> expr = parseTokens(
-                    bangEqual(), two(), // Error: bangEqual without left operand
-                    _for(), leftParen(), semicolon(), semicolon(), rightParen(),
-                    print(), one(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                // "for (;;)" is the same as "while(true)"
-                assertWhileStatementPrints(statements.get(1), true, 1.0);
-            }
-
-            @Test
-            void afterErrorRecoversToNextFunctionDeclarationEvenWhenSemiColonIsMissing() {
-                Optional<Expr> expr = parseTokens(
-                    bangEqual(), two(), // Error: bangEqual without left operand
-                    fun(), identifier("print1"), leftParen(), rightParen(), leftBrace(),
-                    print(), one(), semicolon(),
-                    rightBrace(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                assertFunctionDeclarationWithBodyPrints(statements.get(1), "print1", 1.0);
-            }
-
-            @Test
-            void afterErrorRecoversToNextReturnEvenWhenSemiColonIsMissing() {
-                Optional<Expr> expr = parseTokens(
-                    bangEqual(), two(), // Error: bangEqual without left operand
-                    _return(), semicolon(),
-                    eof()
-                );
-
-                var statements = parser;
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                var returnStatement = castTo(statements.get(1), Statement.Return.class);
-                assertThat(returnStatement.keyword()).isEqualToComparingFieldByField(_return());
-                assertThat(returnStatement.value()).isNull();
-            }
-
-            @Test
-            void afterErrorRecoversToNextClassEvenWhenSemiColonIsMissing() {
-
-                var statements = parseTokens(
-                    bangEqual(), two(), // Error: bangEqual without left operand
-                    _class(), identifier("EmptyClass"), leftBrace(), rightBrace(),
-                    eof()
-                );
-
-                assertThat(statements).hasSize(2);
-
-                assertThat(statements.get(0)).isNull();
-                assertErrorAtLexeme("!=");
-
-                var classStatement = castTo(statements.get(1), Statement.Class.class);
-                assertThat(classStatement.name()).isEqualToComparingFieldByField(identifier("EmptyClass"));
-                assertThat(classStatement.superclass()).isNull();
-                assertThat(classStatement.methods()).isEmpty();
-            }
-        }
-    }
-
-    private <T> T castTo(Object o, Class<T> clazz) {
-        assertThat(o).isInstanceOf(clazz);
-
-        return clazz.cast(o);
+//        @Nested
+//        class If {
+//
+//            @Test
+//            void ifWithoutRightParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    _if(), leftParen(), _true(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at 'print' expect ')' after if condition.");
+//            }
+//
+//            @Test
+//            void ifWithoutCondition() {
+//                Optional<Expr> expr = parseTokens(
+//                    _if(), leftParen(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme(")");
+//
+//                assertPrintStatement(statements.get(1), 1.0);
+//            }
+//
+//            @Test
+//            void ifWithoutLeftParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    _if(), _true(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//                assertThat(statements.get(0)).isNull();
+//                assertError("[line 1] SyntaxError: at 'true' expect '(' after 'if'.");
+//
+//                assertPrintStatement(statements.get(1), 1.0);
+//            }
+//
+//            @Test
+//            void ifElseWithoutElseBranch() {
+//                Optional<Expr> expr = parseTokens(
+//                    _if(), leftParen(), _true(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    _else(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertErrorAtLexeme("end");
+//            }
+//        }
+//
+//        @Nested
+//        class While {
+//
+//            @Test
+//            void whileWithoutRightParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    _while(), leftParen(), _true(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at 'print' expect ')' after while condition.");
+//            }
+//
+//            @Test
+//            void whileWithoutCondition() {
+//                Optional<Expr> expr = parseTokens(
+//                    _while(), leftParen(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme(")");
+//
+//                assertPrintStatement(statements.get(1), 1.0);
+//            }
+//
+//            @Test
+//            void whileWithoutLeftParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    _while(), _true(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//                assertThat(statements.get(0)).isNull();
+//                assertError("[line 1] SyntaxError: at 'true' expect '(' after 'while'.");
+//
+//                assertPrintStatement(statements.get(1), 1.0);
+//            }
+//        }
+//
+//        @Nested
+//        class For {
+//
+//            @Test
+//            void forWithoutRightParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    _for(), leftParen(), semicolon(), semicolon(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at 'print' expect expression.");
+//            }
+//
+//            @Test
+//            void forWithoutLeftParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    _for(), semicolon(), semicolon(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(4);
+//                assertThat(statements.get(0)).isNull();
+//                assertThat(statements.get(1)).isNull();
+//                assertThat(statements.get(2)).isNull();
+//                assertThat(statements.get(3)).isInstanceOf(Statement.Print.class); // Recover to the print statement, this test does not care!
+//                assertError("[line 1] SyntaxError: at ')' expect expression.");
+//            }
+//
+//            @Test
+//            void forWithOneMissingSemiColon() {
+//                Optional<Expr> expr = parseTokens(
+//                    _for(), leftParen(), var(), identifier("i"), equal(), one(), semicolon(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//                assertThat(statements.get(0)).isNull();
+//                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Recover to the print statement, this test does not care!
+//                assertError("[line 1] SyntaxError: at ')' expect expression.");
+//            }
+//
+//            @Test
+//            void forWithTwoMissingSemiColons() {
+//                Optional<Expr> expr = parseTokens(
+//                    _for(), leftParen(), var(), identifier("i"), equal(), one(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//                assertThat(statements.get(0)).isNull();
+//                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Recover to the print statement, this test does not care!
+//                assertError("[line 1] SyntaxError: at ')' expect ';' after variable declaration.");
+//            }
+//        }
+//
+//        @Nested
+//        class CallFunction {
+//
+//            @Test
+//            void callFunctionWithoutLeftParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    identifier("get"), rightParen(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at ')' expect ';' after value.");
+//            }
+//
+//            @Test
+//            void callFunctionWithoutRightParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    identifier("get"), leftParen(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at ';' expect expression.");
+//            }
+//
+//            @Test
+//            void callFunctionWithMissingCommaInArgumentList() {
+//                Optional<Expr> expr = parseTokens(
+//                    identifier("sum"), leftParen(), one(), two(), rightParen(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at '2' expect ')' after arguments.");
+//            }
+//
+//            @Test
+//            void callFunctionWithTooManyArguments() {
+//                Optional<Expr> expr = parseTokens(
+//                    identifier("sum"), leftParen(),
+//                    one(), comma(),
+//                    one(), comma(),
+//                    one(), comma(),
+//                    one(), comma(),
+//                    one(), comma(),
+//                    one(), comma(),
+//                    one(), comma(),
+//                    one(), comma(),
+//                    one(),
+//                    rightParen(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).doesNotContainNull(); // Still parses the call!
+//                assertThat(statements.get(0)).isInstanceOf(Statement.Expression.class);
+//                assertError("[line 1] SyntaxError: at '1' cannot have more than 8 arguments.");
+//            }
+//        }
+//
+//        @Nested
+//        class CallGetProperty {
+//
+//            @Test
+//            void callGetPropertyWithoutObject() {
+//                Optional<Expr> expr = parseTokens(
+//                    dot(), identifier("x"), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at '.' expect expression.");
+//            }
+//
+//            @Test
+//            void callGetPropertyWithoutName() {
+//                Optional<Expr> expr = parseTokens(
+//                    identifier("point"), dot(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at ';' expect property name after '.'.");
+//            }
+//
+//            @Test
+//            void callSetPropertyWithoutObject() {
+//                Optional<Expr> expr = parseTokens(
+//                    dot(), identifier("x"), equal(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at '.' expect expression.");
+//            }
+//
+//            @Test
+//            void callSetPropertyWithoutName() {
+//                Optional<Expr> expr = parseTokens(
+//                    identifier("point"), dot(), equal(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at '=' expect property name after '.'.");
+//            }
+//
+//            @Test
+//            void callSetPropertyWithoutEqual() {
+//                Optional<Expr> expr = parseTokens(
+//                    identifier("point"), dot(), identifier("x"), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at '1' expect ';' after value.");
+//            }
+//
+//            @Test
+//            void callSetPropertyWithoutValue() {
+//                Optional<Expr> expr = parseTokens(
+//                    identifier("point"), dot(), identifier("x"), equal(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at ';' expect expression.");
+//            }
+//        }
+//
+//        @Nested
+//        class Function {
+//
+//            @Test
+//            void functionWithoutIdentifier() {
+//                Optional<Expr> expr = parseTokens(
+//                    fun(), leftParen(), rightParen(), leftBrace(),
+//                    print(), one(), semicolon(),
+//                    rightBrace(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(3);
+//                assertThat(statements.get(0)).isNull();
+//                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Still parses some of the code.
+//                assertThat(statements.get(2)).isNull();
+//                assertError("[line 1] SyntaxError: at '}' expect expression.");
+//            }
+//
+//            @Test
+//            void functionWithoutLeftParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    fun(), identifier("get"), rightParen(), leftBrace(),
+//                    print(), one(), semicolon(),
+//                    rightBrace(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(3);
+//                assertThat(statements.get(0)).isNull();
+//                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Still parses some of the code.
+//                assertThat(statements.get(2)).isNull();
+//                assertError("[line 1] SyntaxError: at '}' expect expression.");
+//            }
+//
+//            @Test
+//            void functionWithoutRightParen() {
+//                Optional<Expr> expr = parseTokens(
+//                    fun(), identifier("get"), leftParen(), leftBrace(),
+//                    print(), one(), semicolon(),
+//                    rightBrace(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(3);
+//                assertThat(statements.get(0)).isNull();
+//                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Still parses some of the code.
+//                assertThat(statements.get(2)).isNull();
+//                assertError("[line 1] SyntaxError: at '}' expect expression.");
+//            }
+//
+//            @Test
+//            void functionWithMissingCommaInParameterList() {
+//                Optional<Expr> expr = parseTokens(
+//                    fun(), identifier("get"), leftParen(), identifier("a"), identifier("b"), rightParen(), leftBrace(),
+//                    print(), one(), semicolon(),
+//                    rightBrace(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(3);
+//                assertThat(statements.get(0)).isNull();
+//                assertThat(statements.get(1)).isInstanceOf(Statement.Print.class); // Still parses some of the code.
+//                assertThat(statements.get(2)).isNull();
+//                assertError("[line 1] SyntaxError: at '}' expect expression.");
+//            }
+//
+//            @Test
+//            void functionWithMoreThan8Parameters() {
+//                Optional<Expr> expr = parseTokens(
+//                    fun(), identifier("get"), leftParen(),
+//                    identifier("a1"), comma(),
+//                    identifier("a2"), comma(),
+//                    identifier("a3"), comma(),
+//                    identifier("a4"), comma(),
+//                    identifier("a5"), comma(),
+//                    identifier("a6"), comma(),
+//                    identifier("a7"), comma(),
+//                    identifier("a8"), comma(),
+//                    identifier("a9"), rightParen(),
+//                    leftBrace(),
+//                    print(), one(), semicolon(),
+//                    rightBrace(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).doesNotContainNull(); // Still parses the call!
+//                assertThat(statements.get(0)).isInstanceOf(Statement.Function.class);
+//                assertError("[line 1] SyntaxError: at 'a9' cannot have more than 8 parameters.");
+//            }
+//
+//            @Test
+//            void functionWithoutLeftBrace() {
+//                Optional<Expr> expr = parseTokens(
+//                    fun(), identifier("get"), leftParen(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    rightBrace(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at '}' expect expression.");
+//            }
+//
+//            @Test
+//            void functionWithoutRightBrace() {
+//                Optional<Expr> expr = parseTokens(
+//                    fun(), identifier("get"), leftParen(), rightParen(), leftBrace(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at 'end' expect '}' after block.");
+//            }
+//        }
+//
+//        @Nested
+//        class Return {
+//
+//            @Test
+//            void emptyReturnWithoutSemicolon() {
+//                Optional<Expr> expr = parseTokens(_return(), eof());
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at 'end' expect expression.");
+//            }
+//
+//            @Test
+//            void returnValueWithoutSemicolon() {
+//                Optional<Expr> expr = parseTokens(_return(), one(), eof());
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at 'end' expect ';' after return value.");
+//            }
+//        }
+//
+//        @Nested
+//        class Class {
+//
+//            @Test
+//            void classWithMissingLeftBrace() {
+//                Optional<Expr> expr = parseTokens(_class(), identifier("Foo"), rightBrace(), eof());
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at '}' expect '{' before class body.");
+//            }
+//
+//            @Test
+//            void classWithMissingRightBrace() {
+//                Optional<Expr> expr = parseTokens(_class(), identifier("Foo"), leftBrace(), eof());
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at 'end' expect '}' after class body.");
+//            }
+//
+//            @Test
+//            void classWithLessTokenButMissingSuperClassIdentifier() {
+//                Optional<Expr> expr = parseTokens(_class(), identifier("Foo"), less(), leftBrace(), rightBrace(), eof());
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at '{' expected super class name.");
+//            }
+//        }
+//
+//        @Nested
+//        class Super {
+//
+//            @Test
+//            void superWithMissingDot() {
+//                Optional<Expr> expr = parseTokens(_super(), identifier("method"), semicolon(), eof());
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at 'method' expect '.' after 'super'.");
+//            }
+//
+//            @Test
+//            void superWithMissingMethod() {
+//                Optional<Expr> expr = parseTokens(_super(), dot(), semicolon(), eof());
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(1).containsOnlyNulls();
+//                assertError("[line 1] SyntaxError: at ';' expect superclass method name.");
+//            }
+//        }
+//
+//        @Nested
+//        class SynchronizeCases {
+//
+//            @Test
+//            void afterErrorRecoversToNextSemiColon() {
+//                Optional<Expr> expr = parseTokens(
+//                    bangEqual(), two(), semicolon(),    // Error: bangEqual without left operand
+//                    one(), bangEqual(), two(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                assertBinaryExpression(extractExpressionFrom(statements.get(1)), 1.0, bangEqual(), 2.0);
+//            }
+//
+//            @Test
+//            void afterErrorRecoversToNextVariableDeclarationEvenWhenSemiColonIsMissing() {
+//                Optional<Expr> expr = parseTokens(
+//                    bangEqual(), two(), // Error: bangEqual without left operand
+//                    var(), identifier("a"), equal(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                assertVariableStatement(statements.get(1), identifier("a"), 1.0);
+//            }
+//
+//            @Test
+//            void afterErrorRecoversToNextPrintDeclarationEvenWhenSemiColonIsMissing() {
+//                Optional<Expr> expr = parseTokens(
+//                    bangEqual(), two(), // Error: bangEqual without left operand
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                assertPrintStatement(statements.get(1), 1.0);
+//            }
+//
+//            @Test
+//            void afterErrorRecoversToNextIfDeclarationEvenWhenSemiColonIsMissing() {
+//                Optional<Expr> expr = parseTokens(
+//                    bangEqual(), two(), // Error: bangEqual without left operand
+//                    _if(), leftParen(), _true(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                assertIfStatementPrints(statements.get(1), true, 1.0);
+//            }
+//
+//            @Test
+//            void afterErrorRecoversToNextWhileDeclarationEvenWhenSemiColonIsMissing() {
+//                Optional<Expr> expr = parseTokens(
+//                    bangEqual(), two(), // Error: bangEqual without left operand
+//                    _while(), leftParen(), _true(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                assertWhileStatementPrints(statements.get(1), true, 1.0);
+//            }
+//
+//            @Test
+//            void afterErrorRecoversToNextForDeclarationEvenWhenSemiColonIsMissing() {
+//                Optional<Expr> expr = parseTokens(
+//                    bangEqual(), two(), // Error: bangEqual without left operand
+//                    _for(), leftParen(), semicolon(), semicolon(), rightParen(),
+//                    print(), one(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                // "for (;;)" is the same as "while(true)"
+//                assertWhileStatementPrints(statements.get(1), true, 1.0);
+//            }
+//
+//            @Test
+//            void afterErrorRecoversToNextFunctionDeclarationEvenWhenSemiColonIsMissing() {
+//                Optional<Expr> expr = parseTokens(
+//                    bangEqual(), two(), // Error: bangEqual without left operand
+//                    fun(), identifier("print1"), leftParen(), rightParen(), leftBrace(),
+//                    print(), one(), semicolon(),
+//                    rightBrace(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                assertFunctionDeclarationWithBodyPrints(statements.get(1), "print1", 1.0);
+//            }
+//
+//            @Test
+//            void afterErrorRecoversToNextReturnEvenWhenSemiColonIsMissing() {
+//                Optional<Expr> expr = parseTokens(
+//                    bangEqual(), two(), // Error: bangEqual without left operand
+//                    _return(), semicolon(),
+//                    eof()
+//                );
+//
+//                var statements = parser;
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                var returnStatement = castTo(statements.get(1), Statement.Return.class);
+//                assertThat(returnStatement.keyword()).isEqualToComparingFieldByField(_return());
+//                assertThat(returnStatement.value()).isNull();
+//            }
+//
+//            @Test
+//            void afterErrorRecoversToNextClassEvenWhenSemiColonIsMissing() {
+//
+//                var statements = parseTokens(
+//                    bangEqual(), two(), // Error: bangEqual without left operand
+//                    _class(), identifier("EmptyClass"), leftBrace(), rightBrace(),
+//                    eof()
+//                );
+//
+//                assertThat(statements).hasSize(2);
+//
+//                assertThat(statements.get(0)).isNull();
+//                assertErrorAtLexeme("!=");
+//
+//                var classStatement = castTo(statements.get(1), Statement.Class.class);
+//                assertThat(classStatement.name()).isEqualToComparingFieldByField(identifier("EmptyClass"));
+//                assertThat(classStatement.superclass()).isNull();
+//                assertThat(classStatement.methods()).isEmpty();
+//            }
+//        }
     }
 
     private Optional<Expr> parseTokens(Token... tokens) {
@@ -2067,89 +2002,4 @@ class ParserTest {
     private Optional<Expr> parseTokens(List<Token> tokens) {
         return Parser.parse(tokens, fakeErrorReporter);
     }
-
-    private Expression extractOnlyExpressionFrom(List<Expr> statements) {
-        return extractExpressionFrom(extractOnlyStatementFrom(statements));
-    }
-
-    private Expression extractExpressionFrom(Statement statement) {
-        return castTo(statement, Statement.Expression.class).expression();
-    }
-
-    private Expr extractOnlyStatementFrom(List<Expr> statements) {
-        assertThat(statements).hasSize(1);
-
-        return statements.get(0);
-    }
-
-    private void assertLiteralExpression(Expression expression, Object expected) {
-        assertThat(castTo(expression, Expression.Literal.class).value()).isEqualTo(expected);
-    }
-
-    private void assertErrorAtLexeme(String lexeme) {
-        assertError("[line 1] SyntaxError: at '" + lexeme + "' expect expression.");
-    }
-
-    private void assertError(String message) {
-        assertThat(fakeErrorReporter.receivedError()).isTrue();
-        assertThat(fakeErrorReporter.getError()).hasToString(message);
-    }
-
-    private void assertBinaryExpression(Expression expression, Object left, Token operator, Object right) {
-        var binaryExpression = castTo(expression, Expression.Binary.class);
-
-        assertLiteralExpression(binaryExpression.left(), left);
-        assertThat(binaryExpression.operator()).isEqualToComparingFieldByField(operator);
-        assertLiteralExpression(binaryExpression.right(), right);
-    }
-
-    private void assertLogicalExpression(Expression expression, Object left, Token operator, Object right) {
-        var logicalExpression = castTo(expression, Expression.Logical.class);
-
-        assertLiteralExpression(logicalExpression.left(), left);
-        assertThat(logicalExpression.operator()).isEqualToComparingFieldByField(operator);
-        assertLiteralExpression(logicalExpression.right(), right);
-    }
-
-    private void assertVariableExpression(Expression expression, Token expected) {
-        assertThat(castTo(expression, Expression.Variable.class).name()).isEqualToComparingFieldByField(expected);
-    }
-
-    private void assertUninitializedVariable(Statement statement, Token name) {
-        var variableDeclaration = castTo(statement, Statement.Variable.class);
-
-        assertThat(variableDeclaration.name()).isEqualToComparingFieldByField(name);
-        assertThat(variableDeclaration.initializer()).isNull();
-    }
-
-    private void assertVariableStatement(Statement statement, Token name, Object expected) {
-        var variableDeclaration = castTo(statement, Statement.Variable.class);
-
-        assertThat(variableDeclaration.name()).isEqualToComparingFieldByField(name);
-        assertLiteralExpression(variableDeclaration.initializer(), expected);
-    }
-
-    private void assertIfElseStatementPrints(Statement statement, boolean condition, Object thenPrints, Object elsePrints) {
-        var ifStatement = castTo(statement, Statement.If.class);
-
-        assertLiteralExpression(ifStatement.condition(), condition);
-        assertPrintStatement(ifStatement.thenBranch(), thenPrints);
-        assertPrintStatement(ifStatement.elseBranch(), elsePrints);
-    }
-
-    private void assertGetExpression(Expression expression, Token object, Token name) {
-        var getExpression = castTo(expression, Expression.Get.class);
-
-        assertVariableExpression(getExpression.object(), object);
-        assertThat(getExpression.name()).isEqualToComparingFieldByField(name);
-    }
-
-    private void assertSetExpressionToLiteral(Expression expression, Token object, Token name, Object expectedValue) {
-        var setExpression = castTo(expression, Expression.Set.class);
-
-        assertVariableExpression(setExpression.object(), object);
-        assertThat(setExpression.name()).isEqualToComparingFieldByField(name);
-        assertLiteralExpression(setExpression.value(), expectedValue);
-    }
-
 }

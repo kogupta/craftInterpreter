@@ -15,6 +15,9 @@ public enum BinaryOperator {
     Subtract("-"),
     Multiply("*"),
     Divide("/"),
+
+    Or("or"),
+    And("and")
     ;
 
     public final String symbol;
