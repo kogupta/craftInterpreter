@@ -14,6 +14,6 @@ public sealed interface Literal extends Expr {
     }
 
     record Nil() implements Literal {
-        public static final Literal Nil = new Nil();
+        public static final Literal Instance = new Nil();
     }
 }

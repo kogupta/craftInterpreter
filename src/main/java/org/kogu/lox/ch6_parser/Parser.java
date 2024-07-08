@@ -14,9 +14,14 @@ import static org.kogu.lox.ch4_scanning.TokenType.*;
 
 public final class Parser {
     private final List<Token> tokens;
+    private final ErrorReporter reporter;
+
     private int current;
 
-    private Parser(List<Token> tokens) {this.tokens = tokens;}
+    private Parser(List<Token> tokens, ErrorReporter reporter) {
+        this.tokens = tokens;
+        this.reporter = reporter;
+    }
 
     // expression -> equality ;
     private Expr expression() {
@@ -119,6 +124,7 @@ public final class Parser {
 
     private ParseError error(Token token, String message) {
         Lox.error(token, message);
+        reporter.handle(Error.parseError(message));
         return new ParseError();
     }
 
@@ -172,7 +178,16 @@ public final class Parser {
     public static final class ParseError extends RuntimeException {}
 
     public static Optional<Expr> parse(List<Token> tokens) {
-        Parser parser = new Parser(tokens);
+        Parser parser = new Parser(tokens, ErrorReporter.console());
+        try {
+            return Optional.ofNullable(parser.expression());
+        } catch (ParseError e) {
+            return Optional.empty();
+        }
+    }
+
+    public static Optional<Expr> parse(List<Token> tokens, ErrorReporter reporter) {
+        Parser parser = new Parser(tokens, reporter);
         try {
             return Optional.ofNullable(parser.expression());
         } catch (ParseError e) {

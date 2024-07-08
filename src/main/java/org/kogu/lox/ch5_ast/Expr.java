@@ -31,6 +31,6 @@ public sealed interface Expr permits Expr.Binary, Expr.Grouping, Expr.Unary, Lit
 
     static Expr literal(boolean b) {return b ? True : False;}
 
-    static Expr nil() {return new Literal.Nil();}
+    static Expr nil() {return Literal.Nil.Instance;}
 
 }
