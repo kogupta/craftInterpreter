@@ -2,14 +2,18 @@ package org.kogu.lox.ch6_parser;
 
 import org.kogu.lox.ch4_scanning.Token;
 import org.kogu.lox.ch4_scanning.TokenType;
+import org.kogu.lox.ch5_ast.Expr;
+import org.kogu.lox.ch5_ast.ExprPrinter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
+@SuppressWarnings("DuplicatedCode")
 public final class Lox {
     private static boolean hadError = false;
 
@@ -49,12 +53,11 @@ public final class Lox {
         org.kogu.lox.ch4_scanning.Scanner scanner = new org.kogu.lox.ch4_scanning.Scanner(src);
         List<Token> tokens = scanner.scanTokens();
 
-        for (Token token : tokens) {
-            System.out.println(token);
-        }
+        Optional<Expr> maybeExpr = Parser.parse(tokens);
 
         if (hadError)
             System.err.println(scanner.errors);
+        else maybeExpr.ifPresent(e -> System.out.println(ExprPrinter.lispy(e)));
     }
 
     public static void error(int line, String message) {

@@ -7,6 +7,8 @@ import org.kogu.lox.ch5_ast.Expr;
 import org.kogu.lox.ch5_ast.UnaryOperator;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.kogu.lox.ch4_scanning.TokenType.*;
 
@@ -14,7 +16,7 @@ public final class Parser {
     private final List<Token> tokens;
     private int current;
 
-    public Parser(List<Token> tokens) {this.tokens = tokens;}
+    private Parser(List<Token> tokens) {this.tokens = tokens;}
 
     // expression -> equality ;
     private Expr expression() {
@@ -23,46 +25,29 @@ public final class Parser {
 
     // equality -> comparison ( ( "!=" | "==" ) comparison )*
     private Expr equality() {
-        Expr expr = comparison();
-        while (match(BANG_EQUAL, EQUAL_EQUAL)) {
-            Token op = previous();
-            Expr right = comparison();
-            expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
-        }
-
-        return expr;
+        return leftAssociate(this::comparison, BANG_EQUAL, EQUAL_EQUAL);
     }
 
     // comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     private Expr comparison() {
-        Expr expr = term();
-        while (matchAny(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
-            Token op = previous();
-            Expr right = term();
-            expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
-        }
-
-        return expr;
+        return leftAssociate(this::term, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL);
     }
 
     // term -> factor ( ( "-" | "+" ) factor )* ;
     private Expr term() {
-        Expr expr = factor();
-        while (match(MINUS, PLUS)) {
-            Token op = previous();
-            Expr right = factor();
-            expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
-        }
-
-        return expr;
+        return leftAssociate(this::factor, MINUS, PLUS);
     }
 
     // factor -> unary ( ( "/" | "*" ) unary )* ;
     private Expr factor() {
-        Expr expr = unary();
-        while (match(SLASH, STAR)) {
+        return leftAssociate(this::unary, SLASH, STAR);
+    }
+
+    private Expr leftAssociate(Supplier<Expr> exprBuilder, TokenType...nextTokens) {
+        Expr expr = exprBuilder.get();
+        while (matchAny(nextTokens)) {
             Token op = previous();
-            Expr right = unary();
+            Expr right = exprBuilder.get();
             expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
         }
 
@@ -110,10 +95,26 @@ public final class Parser {
     private Token consume(TokenType type, String message) {
         Token t = peek();
         if (t.tokenType() == type) {
-            if (isNotEnd()) current++;
+            advance();
             return t;
         }
         throw error(t, message);
+    }
+
+    private void synchronize() {
+        advance();
+        while (isNotEnd()) {
+            // find statement boundary
+            if (previous().tokenType() == SEMICOLON) return;
+
+            // new lines usually start with these tokens
+            switch (peek().tokenType()) {
+                case CLASS, FOR, FUN, IF, PRINT, RETURN, VAR, WHILE: return;
+                default: break;
+            }
+
+            advance();
+        }
     }
 
     private ParseError error(Token token, String message) {
@@ -169,4 +170,13 @@ public final class Parser {
     private Token previous() {return tokens.get(current - 1);}
 
     public static final class ParseError extends RuntimeException {}
+
+    public static Optional<Expr> parse(List<Token> tokens) {
+        Parser parser = new Parser(tokens);
+        try {
+            return Optional.ofNullable(parser.expression());
+        } catch (ParseError e) {
+            return Optional.empty();
+        }
+    }
 }
