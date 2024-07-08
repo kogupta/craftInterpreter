@@ -8,16 +8,17 @@ import java.util.List;
 
 import static org.kogu.lox.ch4_scanning.TokenType.*;
 
-final class Scanner {
+public final class Scanner {
     private final String source;
     private final List<Token> tokens;
 
-    List<ScanError> errors;
+    public final List<ScanError> errors;
     private int start = 0, current = 0, line = 1;
 
-    Scanner(String src) {
+    public Scanner(String src) {
         this.source = src;
         this.tokens = new ArrayList<>();
+        errors = new ArrayList<>();
     }
 
     public List<Token> scanTokens() {
@@ -73,7 +74,6 @@ final class Scanner {
                     identifier();
                 } else {
                     Lox.error(line, "Unexpected character: " + c);
-                    if (errors == null) errors = new ArrayList<>();
                     mergeOrAddError(errors, new ScanError(line, start, current, "unexpected char(s)"));
                 }
             }
@@ -169,7 +169,7 @@ final class Scanner {
         return isAlpha(c) || isDigit(c);
     }
 
-    record ScanError(int line, int start, int end, String message) {}
+    public record ScanError(int line, int start, int end, String message) {}
 
     private static void mergeOrAddError(List<ScanError> errors, ScanError error) {
         if (errors.isEmpty()) {

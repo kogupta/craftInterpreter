@@ -1,4 +1,4 @@
-package org.kogu.lox.ch_parser;
+package org.kogu.lox.ch6_parser;
 
 import org.kogu.lox.ch4_scanning.Token;
 import org.kogu.lox.ch4_scanning.TokenType;
@@ -24,7 +24,7 @@ public final class Parser {
     // equality -> comparison ( ( "!=" | "==" ) comparison )*
     private Expr equality() {
         Expr expr = comparison();
-        while (matchAny(BANG_EQUAL, EQUAL_EQUAL)) {
+        while (match(BANG_EQUAL, EQUAL_EQUAL)) {
             Token op = previous();
             Expr right = comparison();
             expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
@@ -48,7 +48,7 @@ public final class Parser {
     // term -> factor ( ( "-" | "+" ) factor )* ;
     private Expr term() {
         Expr expr = factor();
-        while (matchAny(MINUS, PLUS)) {
+        while (match(MINUS, PLUS)) {
             Token op = previous();
             Expr right = factor();
             expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
@@ -60,7 +60,7 @@ public final class Parser {
     // factor -> unary ( ( "/" | "*" ) unary )* ;
     private Expr factor() {
         Expr expr = unary();
-        while (matchAny(SLASH, STAR)) {
+        while (match(SLASH, STAR)) {
             Token op = previous();
             Expr right = unary();
             expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
@@ -71,7 +71,7 @@ public final class Parser {
 
     // unary -> ( "!" | "-" ) unary | primary
     private Expr unary() {
-        if (matchAny(BANG, MINUS)) {
+        if (match(BANG, MINUS)) {
             Token op = previous();
             Expr expr = primary();
             return Expr.unary(UnaryOperator.from(op.tokenType()), expr);
@@ -82,34 +82,67 @@ public final class Parser {
 
     // primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
     private Expr primary() {
-        if (matchAny(TRUE)) return Expr.literal(true);
-        if (matchAny(FALSE)) return Expr.literal(false);
-        if (matchAny(NIL)) return Expr.nil();
+        if (match(TRUE)) return Expr.literal(true);
+        if (match(FALSE)) return Expr.literal(false);
+        if (match(NIL)) return Expr.nil();
 
-        if (matchAny(STRING, NUMBER)) {
+        if (match(STRING, NUMBER)) {
             Token token = previous();
-            if (token instanceof Token.LiteralToken (_, _, Object literal, _)) {
-                return switch (literal) {
+            if (token instanceof Token.LiteralToken t) {
+                return switch (t.literal()) {
                     case String s -> Expr.literal(s);
                     case Integer i -> Expr.literal(i);
                     case Double v -> Expr.literal(v);
-                    case null, default -> throw new IllegalArgumentException("Unrecognized literal: " + literal);
+                    case null, default -> throw new IllegalArgumentException("Unrecognized literal: " + t.literal());
                 };
             }
         }
 
-        if (matchAny(LEFT_PAREN)) {
+        if (match(LEFT_PAREN)) {
             Expr expr = expression();
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
+
+        throw error(peek(), "Expect expression.");
+    }
+
+    private Token consume(TokenType type, String message) {
+        Token t = peek();
+        if (t.tokenType() == type) {
+            if (isNotEnd()) current++;
+            return t;
+        }
+        throw error(t, message);
+    }
+
+    private ParseError error(Token token, String message) {
+        Lox.error(token, message);
+        return new ParseError();
+    }
+
+    private boolean match(TokenType type) {
+        if (check(type)) {
+            advance();
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean match(TokenType a, TokenType b) {
+        if (check(a) || check(b)) {
+            advance();
+            return true;
+        }
+
+        return false;
     }
 
     private boolean matchAny(TokenType... types) {
         for (TokenType type : types) {
             if (check(type)) {
-                // advance();
-                if (isNotEnd()) current++;
+                advance();
                 return true;
             }
         }
@@ -121,23 +154,19 @@ public final class Parser {
         return isNotEnd() && peek().tokenType() == type;
     }
 
-    private Token advance() {
-        Token token = peek();
-        if (isNotEnd()) current++;
+    private void advance() {if (isNotEnd()) current++;}
 
+    private Token peekAndAdvance() {
+        Token token = peek();
+        advance();
         return token;
     }
 
-    private boolean isNotEnd() {
-        return current < tokens.size();
-        // return peek().tokenType() != EOF;
-    }
+    private boolean isNotEnd() {return peek().tokenType() != EOF;}
 
-    private Token peek() {
-        return tokens.get(current);
-    }
+    private Token peek() {return tokens.get(current);}
 
-    private Token previous() {
-        return tokens.get(current - 1);
-    }
+    private Token previous() {return tokens.get(current - 1);}
+
+    public static final class ParseError extends RuntimeException {}
 }
