@@ -8,7 +8,6 @@ import org.kogu.lox.ch5_ast.UnaryOperator;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import static org.kogu.lox.ch4_scanning.TokenType.*;
 
@@ -30,29 +29,46 @@ public final class Parser {
 
     // equality -> comparison ( ( "!=" | "==" ) comparison )*
     private Expr equality() {
-        return leftAssociate(this::comparison, BANG_EQUAL, EQUAL_EQUAL);
+        Expr expr = comparison();
+        while (match(BANG_EQUAL, EQUAL_EQUAL)) {
+            Token op = previous();
+            Expr right = comparison();
+            expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
+        }
+
+        return expr;
     }
 
     // comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     private Expr comparison() {
-        return leftAssociate(this::term, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL);
+        Expr expr = term();
+        while (matchAny(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+            Token op = previous();
+            Expr right = term();
+            expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
+        }
+
+        return expr;
     }
 
     // term -> factor ( ( "-" | "+" ) factor )* ;
     private Expr term() {
-        return leftAssociate(this::factor, MINUS, PLUS);
+        Expr expr = factor();
+        while (match(MINUS, PLUS)) {
+            Token op = previous();
+            Expr right = factor();
+            expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
+        }
+
+        return expr;
     }
 
     // factor -> unary ( ( "/" | "*" ) unary )* ;
     private Expr factor() {
-        return leftAssociate(this::unary, SLASH, STAR);
-    }
-
-    private Expr leftAssociate(Supplier<Expr> exprBuilder, TokenType...nextTokens) {
-        Expr expr = exprBuilder.get();
-        while (matchAny(nextTokens)) {
+        Expr expr = unary();
+        while (match(SLASH, STAR)) {
             Token op = previous();
-            Expr right = exprBuilder.get();
+            Expr right = unary();
             expr = Expr.binary(expr, BinaryOperator.from(op.tokenType()), right);
         }
 
