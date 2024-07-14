@@ -56,7 +56,8 @@ public final class Interpreter {
             case Add -> {
                 Object b = eval(expr.rhs());
                 if (a instanceof Integer ia && b instanceof Integer ib) yield ia + ib;
-                if (a instanceof String ia && b instanceof String ib)   yield ia + ib;
+                if (a instanceof String || b instanceof String)   yield a.toString() + b.toString();
+
                 double da = (Double) a;
                 double db = (Double) b;
                 yield da + db;
@@ -77,6 +78,9 @@ public final class Interpreter {
             }
             case Divide -> {
                 Object b = eval(expr.rhs());
+                if (b instanceof Number ib && ib.doubleValue() == 0) {
+                    throw new LoxRuntimeError("Cannot divide by zero");
+                }
                 if (a instanceof Integer ia && b instanceof Integer ib) yield ia / ib;
                 double da = (Double) a;
                 double db = (Double) b;
