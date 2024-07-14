@@ -90,7 +90,7 @@ public final class ExprPrinter {
             case Literal.Nil _ -> withinQuote("nil", acc);
             case Literal.Int n -> acc.append(n.n());
             case Literal.Double n -> acc.append(n.d());
-            case Literal.String s -> withinQuote(s.s(), acc);
+            case Literal.String s -> withinQuote(s.value(), acc);
         };
     }
 
