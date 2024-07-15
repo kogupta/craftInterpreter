@@ -19,4 +19,13 @@ public final class Main {
 
         System.out.println((short) f + c / s);
     }
+
+    public static void test(int i, float f, double d, char c, short s, byte b) {
+        System.out.println(i + c/b);
+        System.out.println(f/d + c*f);
+        System.out.println(i + f - b * c);
+        System.out.println((f / i) * c + s);
+        System.out.println(i + f - c + b / d);
+        System.out.println(i / c + f / b);
+    }
 }
