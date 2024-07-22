@@ -5,6 +5,9 @@ import org.kogu.lox.ch5_ast.Literal;
 
 import java.util.Objects;
 
+import static org.kogu.lox.ch5_ast.BinaryOperator.Divide;
+import static org.kogu.lox.ch5_ast.BinaryOperator.asToken;
+
 public final class Interpreter {
 
     public static Object eval(Expr expr) {
@@ -79,7 +82,7 @@ public final class Interpreter {
             case Divide -> {
                 Object b = eval(expr.rhs());
                 if (b instanceof Number ib && ib.doubleValue() == 0) {
-                    throw new LoxRuntimeError("Cannot divide by zero");
+                    throw new LoxRuntimeError(asToken(Divide), "Cannot divide by zero");
                 }
                 if (a instanceof Integer ia && b instanceof Integer ib) yield ia / ib;
                 double da = (Double) a;
