@@ -3,7 +3,7 @@ package org.kogu.lox.ch7_eval;
 public final class Main {
     private Main() {}
 
-    public static void main(String[] args) {
+    public static void main() {
         System.out.println((int)'a');
         System.out.println((short)'a');
         test(10.0f, 'a', (short) 1);
