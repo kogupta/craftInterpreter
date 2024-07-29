@@ -1,6 +1,6 @@
-package org.kogu.lox.ch7_eval;
+package org.kogu.lox.ch07_eval;
 
-import org.kogu.lox.ch4_scanning.Token;
+import org.kogu.lox.ch04_scanning.Token;
 
 public final class LoxRuntimeError extends RuntimeException {
     public final Token token;

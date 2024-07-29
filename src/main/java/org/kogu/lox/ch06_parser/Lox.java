@@ -1,12 +1,19 @@
-package org.kogu.lox.ch4_scanning;
+package org.kogu.lox.ch06_parser;
+
+import org.kogu.lox.ch04_scanning.Token;
+import org.kogu.lox.ch04_scanning.TokenType;
+import org.kogu.lox.ch05_ast.Expr;
+import org.kogu.lox.ch05_ast.ExprPrinter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
+@SuppressWarnings("DuplicatedCode")
 public final class Lox {
     private static boolean hadError = false;
 
@@ -43,19 +50,26 @@ public final class Lox {
     }
 
     private static void run(String src) {
-        org.kogu.lox.ch4_scanning.Scanner scanner = new org.kogu.lox.ch4_scanning.Scanner(src);
+        org.kogu.lox.ch04_scanning.Scanner scanner = new org.kogu.lox.ch04_scanning.Scanner(src);
         List<Token> tokens = scanner.scanTokens();
 
-        for (Token token : tokens) {
-            System.out.println(token);
-        }
+        Optional<Expr> maybeExpr = Parser.parse(tokens);
 
         if (hadError)
             System.err.println(scanner.errors);
+        else maybeExpr.ifPresent(e -> System.out.println(ExprPrinter.lispy(e)));
     }
 
-    static void error(int line, String message) {
+    public static void error(int line, String message) {
         report(line, "", message);
+    }
+
+     public static void error(Token token, String message) {
+        if (token.tokenType() == TokenType.EOF) {
+            report(token.line(), " at end", message);
+        } else {
+            report(token.line(), " at '" + token.lexeme() + "'", message);
+        }
     }
 
     private static void report(int line, String where, String message) {

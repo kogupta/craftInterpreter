@@ -1,4 +1,4 @@
-package org.kogu.lox.ch6_parser;
+package org.kogu.lox.ch06_parser;
 
 public interface Error {
     @Override

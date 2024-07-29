@@ -1,12 +1,12 @@
-package org.kogu.lox.ch4_scanning;
+package org.kogu.lox.ch04_scanning;
 
-import org.kogu.lox.ch4_scanning.Token.LiteralToken;
-import org.kogu.lox.ch4_scanning.Token.SimpleToken;
+import org.kogu.lox.ch04_scanning.Token.LiteralToken;
+import org.kogu.lox.ch04_scanning.Token.SimpleToken;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.kogu.lox.ch4_scanning.TokenType.*;
+import static org.kogu.lox.ch04_scanning.TokenType.*;
 
 public final class Scanner {
     private final String source;

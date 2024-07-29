@@ -1,12 +1,12 @@
-package org.kogu.lox.ch7_eval;
+package org.kogu.lox.ch07_eval;
 
-import org.kogu.lox.ch5_ast.Expr;
-import org.kogu.lox.ch5_ast.Literal;
+import org.kogu.lox.ch05_ast.Expr;
+import org.kogu.lox.ch05_ast.Literal;
 
 import java.util.Objects;
 
-import static org.kogu.lox.ch5_ast.BinaryOperator.Divide;
-import static org.kogu.lox.ch5_ast.BinaryOperator.asToken;
+import static org.kogu.lox.ch05_ast.BinaryOperator.Divide;
+import static org.kogu.lox.ch05_ast.BinaryOperator.asToken;
 
 public final class Interpreter {
 

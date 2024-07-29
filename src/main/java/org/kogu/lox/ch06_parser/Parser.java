@@ -1,15 +1,15 @@
-package org.kogu.lox.ch6_parser;
+package org.kogu.lox.ch06_parser;
 
-import org.kogu.lox.ch4_scanning.Token;
-import org.kogu.lox.ch4_scanning.TokenType;
-import org.kogu.lox.ch5_ast.BinaryOperator;
-import org.kogu.lox.ch5_ast.Expr;
-import org.kogu.lox.ch5_ast.UnaryOperator;
+import org.kogu.lox.ch04_scanning.Token;
+import org.kogu.lox.ch04_scanning.TokenType;
+import org.kogu.lox.ch05_ast.BinaryOperator;
+import org.kogu.lox.ch05_ast.Expr;
+import org.kogu.lox.ch05_ast.UnaryOperator;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.kogu.lox.ch4_scanning.TokenType.*;
+import static org.kogu.lox.ch04_scanning.TokenType.*;
 
 public final class Parser {
     private final List<Token> tokens;

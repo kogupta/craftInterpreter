@@ -1,8 +1,8 @@
-package org.kogu.lox.ch6_parser;
+package org.kogu.lox.ch06_parser;
 
-import org.kogu.lox.ch4_scanning.Token;
+import org.kogu.lox.ch04_scanning.Token;
 
-import static org.kogu.lox.ch4_scanning.TokenType.*;
+import static org.kogu.lox.ch04_scanning.TokenType.*;
 
 public final class Tokens {
     public static Token leftBrace() {

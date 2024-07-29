@@ -1,25 +1,25 @@
-package org.kogu.lox.ch6_parser;
+package org.kogu.lox.ch06_parser;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.kogu.lox.ch4_scanning.Token;
-import org.kogu.lox.ch5_ast.BinaryOperator;
-import org.kogu.lox.ch5_ast.Expr;
-import org.kogu.lox.ch5_ast.Literal;
-import org.kogu.lox.ch5_ast.UnaryOperator;
+import org.kogu.lox.ch04_scanning.Token;
+import org.kogu.lox.ch05_ast.BinaryOperator;
+import org.kogu.lox.ch05_ast.Expr;
+import org.kogu.lox.ch05_ast.Literal;
+import org.kogu.lox.ch05_ast.UnaryOperator;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.kogu.lox.ch4_scanning.TokenType.NIL;
-import static org.kogu.lox.ch4_scanning.TokenType.STRING;
-import static org.kogu.lox.ch5_ast.BinaryOperator.And;
-import static org.kogu.lox.ch5_ast.BinaryOperator.Or;
-import static org.kogu.lox.ch5_ast.Expr.*;
-import static org.kogu.lox.ch5_ast.UnaryOperator.Not;
-import static org.kogu.lox.ch6_parser.Tokens.*;
+import static org.kogu.lox.ch04_scanning.TokenType.NIL;
+import static org.kogu.lox.ch04_scanning.TokenType.STRING;
+import static org.kogu.lox.ch05_ast.BinaryOperator.And;
+import static org.kogu.lox.ch05_ast.BinaryOperator.Or;
+import static org.kogu.lox.ch05_ast.Expr.*;
+import static org.kogu.lox.ch05_ast.UnaryOperator.Not;
+import static org.kogu.lox.ch06_parser.Tokens.*;
 
 class ParserTest {
     private ErrorReporter.FakeErrorReporter fakeErrorReporter;

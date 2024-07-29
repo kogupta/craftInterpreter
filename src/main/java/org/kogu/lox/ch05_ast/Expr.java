@@ -1,8 +1,8 @@
-package org.kogu.lox.ch5_ast;
+package org.kogu.lox.ch05_ast;
 
 
-import static org.kogu.lox.ch5_ast.Literal.Bool.False;
-import static org.kogu.lox.ch5_ast.Literal.Bool.True;
+import static org.kogu.lox.ch05_ast.Literal.Bool.False;
+import static org.kogu.lox.ch05_ast.Literal.Bool.True;
 
 public sealed interface Expr permits Expr.Binary, Expr.Grouping, Expr.Unary, Literal {
     record Binary(Expr lhs, BinaryOperator op, Expr rhs) implements Expr {}

@@ -1,4 +1,4 @@
-package org.kogu.lox.ch4_scanning;
+package org.kogu.lox.ch04_scanning;
 
 sealed public interface Token {
     TokenType tokenType();

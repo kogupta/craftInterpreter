@@ -1,12 +1,12 @@
-package org.kogu.lox.ch5_ast;
+package org.kogu.lox.ch05_ast;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.kogu.lox.ch5_ast.BinaryOperator.*;
-import static org.kogu.lox.ch5_ast.Expr.*;
-import static org.kogu.lox.ch5_ast.ExprPrinter.*;
-import static org.kogu.lox.ch5_ast.UnaryOperator.Negative;
+import static org.kogu.lox.ch05_ast.BinaryOperator.*;
+import static org.kogu.lox.ch05_ast.Expr.*;
+import static org.kogu.lox.ch05_ast.ExprPrinter.*;
+import static org.kogu.lox.ch05_ast.UnaryOperator.Negative;
 
 class ExprPrinterTest {
     @Test

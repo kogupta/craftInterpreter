@@ -1,4 +1,4 @@
-package org.kogu.lox.ch5_ast;
+package org.kogu.lox.ch05_ast;
 
 public final class ExprPrinter {
     public static String asInfix(Expr expr) {

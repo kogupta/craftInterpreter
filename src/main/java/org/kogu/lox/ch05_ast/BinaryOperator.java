@@ -1,10 +1,10 @@
-package org.kogu.lox.ch5_ast;
+package org.kogu.lox.ch05_ast;
 
-import org.kogu.lox.ch4_scanning.Token;
-import org.kogu.lox.ch4_scanning.TokenType;
+import org.kogu.lox.ch04_scanning.Token;
+import org.kogu.lox.ch04_scanning.TokenType;
 
-import static org.kogu.lox.ch4_scanning.Token.of;
-import static org.kogu.lox.ch4_scanning.TokenType.*;
+import static org.kogu.lox.ch04_scanning.Token.of;
+import static org.kogu.lox.ch04_scanning.TokenType.*;
 
 public enum BinaryOperator {
     Eq("=="),
